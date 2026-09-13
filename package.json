@@ -1,0 +1,45 @@
+{
+  "name": "juridico-api",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "npm run dev"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "http-status-codes": "^2.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.2.0",
+    "pg": "^8.22.0",
+    "pg-int8": "^1.0.1",
+    "pg-protocol": "^1.15.0",
+    "pg-types": "^2.2.0",
+    "postgres-array": "^2.0.0",
+    "postgres-bytea": "^1.0.1",
+    "postgres-date": "^1.0.7",
+    "postgres-interval": "^1.2.0",
+    "undici-types": "^8.3.0",
+    "xtend": "^4.0.2",
+    "yup": "^1.7.1"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/cors": "^2.8.19",
+    "@types/dotenv": "^6.1.1",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.2.0",
+    "@types/pg": "^8.20.0",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2"
+  }
+}
