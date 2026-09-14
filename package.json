@@ -12,6 +12,7 @@
     "start": "npm run dev"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.116.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",

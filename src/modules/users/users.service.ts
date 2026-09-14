@@ -66,13 +66,12 @@ export async function Login(email: string, password: string): Promise<string | n
   }
   const pass = getPasswordDataBase.rows[0];
 
-  const token = jwt.sign({id :pass.id}, "privateKy", { expiresIn: '1d'});
+  const token = jwt.sign({id :pass.id}, process.env.JWT_SECRET_KEY!, { expiresIn: '1d'});
   console.log(token)
 
   const validatePassword = await bcrypt.compare(password, pass.password);
   console.log(validatePassword);
   if (validatePassword === false) return null;
 
-  
   return token;
 };

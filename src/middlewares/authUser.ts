@@ -1,18 +1,12 @@
-import jwt from "jsonwebtoken";
+import {Response, Request, NextFunction} from "express";
+import Jwt from "jsonwebtoken";
 
-
-function val(){
-    const payload = {email: "victoreduardomartins2@gmail.com"};
-    const key = "1234";
-    
-    const sing = jwt.sign(payload, key);
-
-   try {
-    const auth = jwt.verify(sing, key);
-    return auth;
-   } catch(err){
-        return "não encontrado";  
-   }
-
+export async function AuthUser(req : Request, res: Response, next: NextFunction) {
+     const header = req.headers.authorization as string; 
+     if(!header){
+          console.log('NÃO EXISTE TOKEN');
+     }
+     const barrer = header.split(" ");
+     const token = barrer[1];
+     res.json({token: token});
 }
- console.log(val());
