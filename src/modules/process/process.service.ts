@@ -1,3 +1,4 @@
+import { boolean, number } from "yup";
 import { pool } from "../../config/database.js";
 import {
   Process,
@@ -36,17 +37,40 @@ export async function createProcess(
   return result.rows[0];
 }
 
-
-export async function updateProcess(id: number, data: UpdateProcessInput): Promise<Process | null> {
+export async function updateProcess(
+  id: number,
+  data: UpdateProcessInput,
+): Promise<Process | null> {
   const existing = await findById(id);
-  if(!existing) return null;
+  if (!existing) return null;
 
-  const merged = {...data, ...existing};
+  const merged = { ...data, ...existing };
 
-  const result = await pool.query(`UPDATE public.process
+  const result = await pool.query(
+    `UPDATE public.process
 	SET process_num=$1, title=$2, id_costumer=$3, id_lawyer=$4, status=$5, area=$6, last_update=now(), court=$7, observations=$8
-	WHERE id=$9`,[merged.process_num, merged.title, merged.id_costumer, merged.id_lawyer, merged.status, merged.area, merged.court, merged.observations]);
-
+	WHERE id=$9`,
+    [
+      merged.process_num,
+      merged.title,
+      merged.id_costumer,
+      merged.id_lawyer,
+      merged.status,
+      merged.area,
+      merged.court,
+      merged.observations,
+    ],
+  );
 
   return result.rows[0];
+}
+//arrumar
+export async function deleteById(id: number): Promise<boolean> {
+  const existing = await findById(id);
+  
+  if (!existing) return false;
+  
+  await pool.query(`DELETE FROM PUBLIC.users where id = $1`, [id]);
+
+  return true;
 }

@@ -70,3 +70,9 @@ export async function updateProcess(req: Request, res: Response) {
 
     return res.status(StatusCodes.ACCEPTED).send("Usuario Mudado com sucesso!").json({costumer: result});
 }
+////// arrumar
+export async function deleteById(req: Request, res: Response) {
+    const id = Number(req.params.id);
+    await service.deleteById(id);
+    res.status(StatusCodes.OK).json({message: "Usuario deletedo com sucesso"});
+}

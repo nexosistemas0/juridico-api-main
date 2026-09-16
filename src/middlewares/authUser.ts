@@ -17,8 +17,9 @@ export async function AuthUser(req : Request, res: Response, next: NextFunction)
      }
      if(decoded === null) return res.status(StatusCodes.UNAUTHORIZED).json({message: "token invalido"})
 
-     req.user = {id: (decoded as any).id};
-     if(req.user.id === undefined){
+     req.userId = {id: (decoded as any).id};
+     console.log(req.userId.id)
+     if(req.userId.id === undefined){
           return res.status(StatusCodes.UNAUTHORIZED).json({message: "Não autorizado, user invalido"});
      }
      return next();
