@@ -7,13 +7,12 @@ async function getUserType(userId: string) {
         `SELECT type FROM public.users WHERE id = $1`,
         [userId]
     );
-    console.log(result.rows)
     return result.rows[0]?.type ?? null;
 }
 
 export async function checkAdv(req: Request, res: Response, next: NextFunction) {
     const userId = req.userId.id;
-    // console.log(userId);
+
     if (!userId) {
         return res.status(StatusCodes.UNAUTHORIZED).json({ message: "Acesso não autorizado" });
     }
@@ -40,8 +39,8 @@ export async function checkUser(req: Request, res: Response, next: NextFunction)
 
     try {
         const userType = await getUserType(userId);
-
-        if (userType !== "costumer" || userType !== "adv") {
+        console.log(userType);
+        if (userType !== "costumer" && userType != "adv") {
             return res.status(StatusCodes.FORBIDDEN).json({ message: "Acesso restrito a usuários comuns" });
         }
 

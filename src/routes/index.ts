@@ -9,7 +9,6 @@ import movementsRoutes from "../modules/movements/movements.routes.js";
 import notificationsRoutes from "../modules/notifications/notifications.routes.js";
 
 const router = Router();
-
 router.use("/users", usersRoutes);
 router.use("/costumers", costumersRoutes);
 router.use("/lawyers", lawyersRoutes);

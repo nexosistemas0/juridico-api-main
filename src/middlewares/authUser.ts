@@ -7,6 +7,7 @@ export async function AuthUser(req : Request, res: Response, next: NextFunction)
      if(!header){
           return res.status(StatusCodes.UNAUTHORIZED).json({message: "Não autorizado"});
      }
+     
      const barrer = header.split(" ");
      const token = barrer[1];
      let decoded = null;

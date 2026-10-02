@@ -1,6 +1,6 @@
 import {pool} from "../../config/database.js";
 import {CreateDocument, Documents, UpdateDocument} from "../../types/documents.types.js";
-
+// arrumar arquivo, parte do create de pois na verdade ele ja fazer com os dados que vierem da api
 export async function findAll(): Promise<Documents[]> {
     const result = await pool.query("SELECT * FROM documents");
     return result.rows;
@@ -39,7 +39,7 @@ export async function update(id: number, document: Omit<UpdateDocument, "file">,
 }
 
 
-export async function remove(id: number): Promise<boolean> {
+export async function remove(id: number): Promise<any | null> {
     const result = await pool.query("DELETE FROM documents WHERE id = $1", [id]);
-    return result.rowCount > 0;
+    return result.rowCount! > 0;
 }
