@@ -1,7 +1,7 @@
 import {Request, Response} from "express";
 import * as service from './movements.service.js';
 import {StatusCodes} from "http-status-codes";
-
+import { canAccessChild } from "../../utils/acces.js";
 
 export async function getAll(req:Request, res:Response){
     const movements = await service.getAll();
@@ -10,6 +10,9 @@ export async function getAll(req:Request, res:Response){
 
 export async function getById(req:Request, res:Response){
     const id = Number(req.params.id);
+    if (!(await canAccessChild(req.userId.id, "movements", id))) {
+    return res.status(404).json({ message: "movemento não encontrado" });
+  }
     const movement = await service.getById(id);
     return res.status(StatusCodes.OK).json({movement: movement});
 }

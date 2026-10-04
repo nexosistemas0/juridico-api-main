@@ -3,7 +3,6 @@ import * as yup from "yup";
 import * as usersService from "./users.service.js";
 import { StatusCodes } from "http-status-codes";
 import { bodyValidationCreate } from "./users.squema.js";
-
 export async function list(req: Request, res: Response) {
   const users = await usersService.findAll();
   res.status(StatusCodes.OK).json(users);
@@ -37,8 +36,7 @@ export async function create(req: Request, res: Response) {
     const user = await usersService.create(validatedBody);
     return res.status(StatusCodes.CREATED).json(user);
   } catch (err) {
-    console.error(err);
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: "Erro ao criar usuário" });
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: err.message });
   }
 };
 

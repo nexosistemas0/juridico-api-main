@@ -7,6 +7,16 @@ import {
 } from "../../types/user.types.js";
 import * as bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { EmailAlredyExist } from "../../errors/errors.js";
+
+
+async function emailExist(email: string): Promise<boolean> {
+  const result = await pool.query(`SELECT * FROM PUBLIC.users where email = $1`,[email]);
+  if(result.rowCount === 1){
+    return true;
+  }
+  return false;
+}
 
 
 export async function findAll(): Promise<User[]> {
@@ -20,17 +30,23 @@ export async function findById(id: number): Promise<User | null> {
 }
 
 export async function create(data: CreateUserInput): Promise<User> {
-  const { name, email, phone, password } = data;
-  
-  const salt = await bcrypt.genSalt(10);
-  const newPassword = await bcrypt.hash(password, salt);
-  const result = await pool.query(
-    `INSERT INTO users (name, email, phone, type ,password)
-     VALUES ($1, $2, $3, 'costumer', $4)
-     RETURNING *`,
-    [name, email, phone, newPassword]
-  );
-  return result.rows[0];
+  const { name, phone, password } = data;
+  const email = data.email.trim().toLowerCase();
+
+  const hash = await bcrypt.hash(password, 12);
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO users (name, email, phone, type, password)
+       VALUES ($1, $2, $3, 'customer', $4)
+       RETURNING id, name, email, phone, type`,
+      [name, email, phone, hash]
+    );
+    return result.rows[0];
+  } catch (err: any) {
+    if (err.code === '23505') throw new EmailAlredyExist();
+    throw err;
+  }
 }
 
 export async function update(

@@ -3,7 +3,7 @@ import * as lawyerValidator from "./lawyers.validator.js";
 import * as controller from "./lawyers.controller.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import {AuthUser} from "../../middlewares/authUser.js";
-import {checkAdv, checkUser} from "../../middlewares/checkPermition.js";
+import {checkAdv, checkUser} from "../../middlewares/check/checkPermition.js";
 
 const router = Router();
 router.use(AuthUser);

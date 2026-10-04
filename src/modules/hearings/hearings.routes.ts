@@ -3,7 +3,7 @@ import * as controller from "./hearings.controller.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import * as validator from "./hearings.validator.js";
 import {AuthUser} from "../../middlewares/authUser.js";
-import {checkUser, checkAdv} from "../../middlewares/checkPermition.js";
+import {checkUser, checkAdv} from "../../middlewares/check/checkPermition.js";
 const router = Router();
 router.use(AuthUser);
 

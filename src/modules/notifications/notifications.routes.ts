@@ -1,7 +1,7 @@
 import { Router } from "express";
 import * as controller from "./notifications.controller.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
-import { checkAdv, checkUser } from "../../middlewares/checkPermition.js";
+import { checkAdv, checkUser } from "../../middlewares/check/checkPermition.js";
 import { AuthUser } from "../../middlewares/authUser.js";
 import * as validator from "./notifications.validator.js";
 const router = Router();

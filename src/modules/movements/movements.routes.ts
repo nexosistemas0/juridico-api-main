@@ -5,7 +5,7 @@ import * as validator from "./movements.validator.js";
 import {asyncHandler} from "../../utils/asyncHandler.js";
 
 import { AuthUser } from "../../middlewares/authUser.js";
-import { checkAdv } from "../../middlewares/checkPermition.js";
+import { checkAdv } from "../../middlewares/check/checkPermition.js";
 
 const router = Router();
 router.use(AuthUser)

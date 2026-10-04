@@ -5,6 +5,7 @@ import {
   CreateProcessInput,
   UpdateProcessInput,
 } from "../../types/process.types.js";
+import { ProcessNumberAlreadyExistsError } from "../../errors/errors.js";
 
 export async function findAll(): Promise<Process[]> {
   const result = await pool.query("SELECT * FROM process");
@@ -19,22 +20,27 @@ export async function findById(id: number): Promise<Process | null> {
 export async function createProcess(
   data: CreateProcessInput,
 ): Promise<Process> {
-  const result = await pool.query(
-    `INSERT INTO public.process(
+  try {
+    const result = await pool.query(
+      `INSERT INTO public.process(
         process_num, title, id_costumer, id_lawyer, status, area, last_update, court, observations)
-        VALUES ($1, $2, $3, $4, $5, $6, now(), $7, $8) RETURNING *`,
-    [
-      data.process_num,
-      data.title,
-      data.id_costumer,
-      data.id_lawyer,
-      data.status,
-      data.area,
-      data.court,
-      data.observations,
-    ],
-  );
-  return result.rows[0];
+        VALUES ($1, $2, $3, $4, $5, $6, now(), $7, $8) RETURNINsG *`,
+      [
+        data.process_num,
+        data.title,
+        data.id_costumer,
+        data.id_lawyer,
+        data.status,
+        data.area,
+        data.court,
+        data.observations,
+      ],
+    );
+    return result.rows[0];
+  } catch (err: any) {
+    if (err.code === "23505") throw new ProcessNumberAlreadyExistsError();
+    throw err;
+  }
 }
 
 export async function updateProcess(
@@ -67,9 +73,9 @@ export async function updateProcess(
 //arrumar
 export async function deleteById(id: number): Promise<boolean> {
   const existing = await findById(id);
-  
+
   if (!existing) return false;
-  
+
   await pool.query(`DELETE FROM PUBLIC.users where id = $1`, [id]);
 
   return true;

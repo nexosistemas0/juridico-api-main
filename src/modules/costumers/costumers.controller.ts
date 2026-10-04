@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-
+import { isOwnCostumer } from "../../utils/isOwnCosumters.js";
 import * as costumerService from "./costumers.service.js";
 import { StatusCodes } from "http-status-codes";
 
@@ -10,6 +10,7 @@ export async function list(req: Request, res: Response) {
 
 export async function getOne(req: Request, res: Response) {
   const id = Number(req.params.id);
+
   if (Number.isNaN(id)) {
     return res.status(StatusCodes.BAD_REQUEST).json({ error: "ID inválido" });
   }

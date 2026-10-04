@@ -2,9 +2,9 @@ import { Router } from "express";
 import * as costumersController from "./costumers.controller.js";
 import * as constumersValidador from "./costumers.validator.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
-import { checkAdv, checkUser } from "../../middlewares/checkPermition.js";
+import { checkAdv, checkUser } from "../../middlewares/check/checkPermition.js";
 import { AuthUser } from "../../middlewares/authUser.js";
-
+import { isOwnCostumer } from "../../utils/isOwnCosumters.js";
 
 const router = Router();
 router.use(AuthUser);

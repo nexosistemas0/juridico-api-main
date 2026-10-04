@@ -1,15 +1,18 @@
 import { Request, Response } from "express";
 import * as service from "./documents.service.js";
 import { StatusCodes } from "http-status-codes";
-
+import { canAccessChild } from "../../utils/acces.js";
 export async function list(req: Request, res: Response) {
   const documents = await service.findAll();
   return res.status(StatusCodes.OK).json({ documents: documents });
 }
 
 export async function getById(req: Request, res: Response) {
-  const { id } = req.params;
+  const id = Number(req.params.id);
   const document = await service.findById(Number(id));
+  if (!(await canAccessChild(req.userId.id, "documents", id))) {
+    return res.status(404).json({ message: "Documento não encontrado" });
+  }
   if (!document) {
     return res
       .status(StatusCodes.NOT_FOUND)

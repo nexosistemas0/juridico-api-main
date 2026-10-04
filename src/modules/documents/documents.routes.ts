@@ -3,8 +3,13 @@ import * as validator from "./documents.validator.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { Router } from "express";
 import {AuthUser} from "../../middlewares/authUser.js";
-import {checkAdv, checkUser} from "../../middlewares/checkPermition.js";
+import {checkAdv, checkUser} from "../../middlewares/check/checkPermition.js";
 import { upload } from "../../middlewares/upload.js"; // ajuste pro nome real do seu arquivo
+
+
+
+
+
 const router = Router();
 router.use(AuthUser);
 // TODO: implementar seguindo o padrão do módulo users

@@ -1,5 +1,5 @@
 import { StatusCodes } from "http-status-codes";
-import { pool } from "../config/database.js";
+import { pool } from "../../config/database.js";
 import { Request, Response, NextFunction } from "express";
 
 async function getUserType(userId: string) {
