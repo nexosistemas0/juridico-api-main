@@ -1,4 +1,4 @@
-import { error } from "console";
+
 import { pool } from "../../config/database.js";
 import {
   CreateUserInput,
@@ -24,7 +24,6 @@ export async function create(data: CreateUserInput): Promise<User> {
   
   const salt = await bcrypt.genSalt(10);
   const newPassword = await bcrypt.hash(password, salt);
-  console.log(newPassword)
   const result = await pool.query(
     `INSERT INTO users (name, email, phone, type ,password)
      VALUES ($1, $2, $3, 'costumer', $4)
@@ -67,10 +66,8 @@ export async function Login(email: string, password: string): Promise<string | n
   const pass = getPasswordDataBase.rows[0];
 
   const token = jwt.sign({id :pass.id}, process.env.JWT_SECRET_KEY!, { expiresIn: '1d'});
-  console.log(token)
 
   const validatePassword = await bcrypt.compare(password, pass.password);
-  console.log(validatePassword);
   if (validatePassword === false) return null;
 
   return token;

@@ -3,8 +3,6 @@ import * as yup from "yup";
 import * as usersService from "./users.service.js";
 import { StatusCodes } from "http-status-codes";
 import { bodyValidationCreate } from "./users.squema.js";
-import { log } from "console";
-import { resourceUsage } from "process";
 
 export async function list(req: Request, res: Response) {
   const users = await usersService.findAll();

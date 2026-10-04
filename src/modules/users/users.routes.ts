@@ -12,25 +12,30 @@ const router = Router();
 router.use(globlalLimiter
 );
 
+
 router.get(
   "/",
+  asyncHandler(AuthUser),
   asyncHandler(check.checkAdv),
   usersController.list,
 );
 router.get(
   "/:id",
+  asyncHandler(AuthUser),
   asyncHandler(check.checkAdv),
   asyncHandler(usersController.getOne),
 );
 
 router.put(
   "/:id",
+  asyncHandler(AuthUser),
   asyncHandler(check.checkAdv),
   asyncHandler(usersValidator.updateValidator),
   asyncHandler(usersController.update),
 );
 router.delete(
   "/:id",
+  asyncHandler(AuthUser),
   asyncHandler(check.checkAdv),
   asyncHandler(usersController.remove),
 );

@@ -39,7 +39,6 @@ export async function checkUser(req: Request, res: Response, next: NextFunction)
 
     try {
         const userType = await getUserType(userId);
-        console.log(userType);
         if (userType !== "costumer" && userType != "adv") {
             return res.status(StatusCodes.FORBIDDEN).json({ message: "Acesso restrito a usuários comuns" });
         }
