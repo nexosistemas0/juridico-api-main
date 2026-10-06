@@ -2,7 +2,8 @@ import { Result } from "pg";
 import { pool } from "../../config/database.js";
 import * as types from "../../types/hearings.types.js";
 import * as process from "../process/process.service.js";
-import { REQUESTED_RANGE_NOT_SATISFIABLE } from "http-status-codes";
+
+
 export async function findAll(): Promise<types.hearings[]> {
   const result = await pool.query("SELECT * FROM hearings");
   return result.rows;
@@ -74,9 +75,6 @@ export async function update(
 
 export async function remove(id: number): Promise<boolean>{
   const hearing = await pool.query(`DELETE FROM PUBLIC.hearings WHERE id = $1`, [id]);
-    if(hearing.rows[0] !== 1){
-      return false;
-    }
-  return true;
+    return (hearing.rowCount ?? 0) > 0;
 }
 

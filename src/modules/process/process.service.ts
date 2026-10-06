@@ -1,4 +1,3 @@
-import { boolean, number } from "yup";
 import { pool } from "../../config/database.js";
 import {
   Process,
@@ -57,7 +56,7 @@ export async function updateProcess(
   const result = await pool.query(
     `UPDATE public.process
 	SET process_num=$1, title=$2, id_costumer=$3, id_lawyer=$4, status=$5, area=$6, last_update=now(), court=$7, observations=$8
-	WHERE id=$9`,
+	WHERE id=$9 RETURNING id`,
     [
       merged.process_num,
       merged.title,

@@ -68,7 +68,7 @@ export async function updateProcess(req: Request, res: Response) {
         process_num, title, id_costumer, id_lawyer, status, area, court, observations
     });
 
-    return res.status(StatusCodes.ACCEPTED).send("Usuario Mudado com sucesso!").json({costumer: result});
+    return res.status(StatusCodes.ACCEPTED).json({costumer: result});
 }
 ////// arrumar
 export async function deleteById(req: Request, res: Response) {

@@ -17,7 +17,6 @@ router.post(
   "/",
   asyncHandler(checkAdv),
   upload.single("file"),
-  asyncHandler(checkProcessOwnerLawyer),
   asyncHandler(validator.createValidator),
   controller.create,
 );
@@ -25,7 +24,6 @@ router.put(
   "/:id",
   asyncHandler(checkAdv),
   upload.single("file"),
-  asyncHandler(checkProcessOwnerLawyer),
   asyncHandler(validator.updateValidator),
   asyncHandler(controller.update),
 );

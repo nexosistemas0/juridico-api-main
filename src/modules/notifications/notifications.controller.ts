@@ -3,7 +3,7 @@ import * as service from "./notifications.service.js"
 import { StatusCodes } from "http-status-codes";
 
 export async function getAll(req: Request, res: Response) {
-    const userId = Number(req.userId);
+    const userId = Number(req.userId.id);
     const notification = await service.getAll(userId);
     return res.status(StatusCodes.OK).json({message: notification});
 }
