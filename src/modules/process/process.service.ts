@@ -24,7 +24,7 @@ export async function createProcess(
     const result = await pool.query(
       `INSERT INTO public.process(
         process_num, title, id_costumer, id_lawyer, status, area, last_update, court, observations)
-        VALUES ($1, $2, $3, $4, $5, $6, now(), $7, $8) RETURNINsG *`,
+        VALUES ($1, $2, $3, $4, $5, $6, now(), $7, $8) RETURNING *`,
       [
         data.process_num,
         data.title,
@@ -47,10 +47,12 @@ export async function updateProcess(
   id: number,
   data: UpdateProcessInput,
 ): Promise<Process | null> {
+
+
   const existing = await findById(id);
   if (!existing) return null;
 
-  const merged = { ...data, ...existing };
+  const merged = { ...existing, ...data };
 
   const result = await pool.query(
     `UPDATE public.process
@@ -65,6 +67,7 @@ export async function updateProcess(
       merged.area,
       merged.court,
       merged.observations,
+      id
     ],
   );
 
@@ -76,7 +79,7 @@ export async function deleteById(id: number): Promise<boolean> {
 
   if (!existing) return false;
 
-  await pool.query(`DELETE FROM PUBLIC.users where id = $1`, [id]);
+  await pool.query(`DELETE FROM PUBLIC.process where id = $1`, [id]);
 
   return true;
 }

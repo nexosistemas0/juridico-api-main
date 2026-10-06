@@ -7,8 +7,6 @@ import * as usersValidator from "./user.validator.js";
 import { AuthUser } from "../../middlewares/authUser.js";
 import * as check from "../../middlewares/check/checkPermition.js";
 import { authLimiter, globlalLimiter } from "../../middlewares/rateLimit.js";
-import { checkProcessOwner } from "../../middlewares/check/checkProccesOwner.js";
-import { checkProcessOwnerLawyer } from "../../middlewares/check/checkProccesLawyer.js";
 const router = Router();
 
 router.use(globlalLimiter
@@ -32,7 +30,6 @@ router.put(
   "/:id",
   asyncHandler(AuthUser),
   asyncHandler(check.checkAdv),
-  asyncHandler(checkProcessOwnerLawyer),
   asyncHandler(usersValidator.updateValidator),
   asyncHandler(usersController.update),
 );
@@ -40,7 +37,6 @@ router.delete(
   "/:id",
   asyncHandler(AuthUser),
   asyncHandler(check.checkAdv),
-  asyncHandler(checkProcessOwnerLawyer),
   asyncHandler(usersController.remove),
 );
 ////// LOGIN
