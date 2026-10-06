@@ -22,11 +22,11 @@ export async function create(req: Request, res: Response) {
   const { id_process } = req.body;
   const processExisting = await serviceProcess.findById(id_process);
   if (!processExisting) {
-    res
+    return res
       .status(StatusCodes.BAD_REQUEST)
       .json({ error: "Processo não existe na base de dados" });
   }
-  const hearing = await service.create(req.body);
+  await service.create(req.body);
   return res
     .status(StatusCodes.CREATED)
     .json({ message: "Audiencia criada com sucesso" });
@@ -68,5 +68,8 @@ export async function update(req: Request, res: Response) {
 export async function remove(req:Request,res:Response){
     const id = Number(req.params.id);
     const hearing = await service.remove(id);
+    if(!hearing){
+      return res.status(StatusCodes.NOT_FOUND).json({message: "Audiencia não encontrada"})
+    }
     return res.status(StatusCodes.OK).json({message: "Audiencia deletada com sucesso"});
 }

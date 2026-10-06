@@ -5,7 +5,7 @@ import { Router } from "express";
 import {AuthUser} from "../../middlewares/authUser.js";
 import {checkAdv, checkUser} from "../../middlewares/check/checkPermition.js";
 import { upload } from "../../middlewares/upload.js"; // ajuste pro nome real do seu arquivo
-
+import { checkProcessOwnerLawyer } from "../../middlewares/check/checkProccesLawyer.js";
 
 
 
@@ -17,15 +17,17 @@ router.post(
   "/",
   asyncHandler(checkAdv),
   upload.single("file"),
-  validator.createValidator,
+  asyncHandler(checkProcessOwnerLawyer),
+  asyncHandler(validator.createValidator),
   controller.create,
 );
 router.put(
   "/:id",
   asyncHandler(checkAdv),
   upload.single("file"),
-  validator.updateValidator,
-  controller.update,
+  asyncHandler(checkProcessOwnerLawyer),
+  asyncHandler(validator.updateValidator),
+  asyncHandler(controller.update),
 );
 router.get("/:id", 
   asyncHandler(checkUser), 
