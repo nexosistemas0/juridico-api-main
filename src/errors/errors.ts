@@ -10,7 +10,7 @@ export class AppError extends Error {
 }
 
 // users
-export class EmailAlreadyExistsError extends AppError {
+export class EmailAlredyExist extends AppError {
   constructor() {
     super('E-mail já cadastrado', 409, 'EMAIL_ALREADY_EXISTS');
   }

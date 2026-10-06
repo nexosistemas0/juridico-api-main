@@ -1,6 +1,7 @@
 import {
   CreateUserInput,
   UpdateUserInput,
+  LoginInput
 } from "../../types/user.types.js";
 import * as yup from "yup"
 
@@ -12,6 +13,12 @@ export const bodyValidationCreate:  yup.ObjectSchema<CreateUserInput> = yup.obje
     phone: yup.string().required(),
     password: yup.string().required()
 });
+
+export const loginValidatorCreate:  yup.ObjectSchema<LoginInput> = yup.object().shape({
+    email: yup.string().email().required(),
+    password: yup.string().required()
+});
+
 
 export const bodyValidationUpdate: yup.ObjectSchema<UpdateUserInput> = yup.object().shape({
     name: yup.string(),

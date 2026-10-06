@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import { StatusCodes } from "http-status-codes";
-import { bodyValidationUpdate, bodyValidationCreate } from "./users.squema.js";
+import { bodyValidationUpdate, bodyValidationCreate, loginValidatorCreate } from "./users.squema.js";
 import * as yup from "yup";
 import { YupErrors } from "../../middlewares/yupError.js";
 
@@ -36,6 +36,27 @@ export const removeValidator: RequestHandler = async (req, res, next) => {
 export const createValidator: RequestHandler = async (req, res, next) => {
   try {
     const validatedBody = await bodyValidationCreate.validate(req.body, {
+      stripUnknown: true,
+      abortEarly: false,
+    });
+    req.body = validatedBody;
+    next();
+  } catch (err) {
+    if (err instanceof yup.ValidationError) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message: "Erro de validação",
+        errors: YupErrors(err),
+      });
+    }
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ errors: ["Dados inválidos"] });
+  }
+};
+
+export const loginValidator: RequestHandler = async (req, res, next) => {
+  try {
+    const validatedBody = await loginValidatorCreate.validate(req.body, {
       stripUnknown: true,
       abortEarly: false,
     });

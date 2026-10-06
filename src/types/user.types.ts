@@ -7,4 +7,8 @@ export interface User {
 }
 
 export type CreateUserInput = Omit<User, "id">;
+export type LoginInput = {
+  email: string,
+  password: string
+}
 export type UpdateUserInput = Partial<CreateUserInput>;

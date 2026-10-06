@@ -9,9 +9,7 @@ import * as check from "../../middlewares/check/checkPermition.js";
 import { authLimiter, globlalLimiter } from "../../middlewares/rateLimit.js";
 const router = Router();
 
-router.use(globlalLimiter
-);
-
+router.use(globlalLimiter);
 
 router.get(
   "/",
@@ -20,7 +18,7 @@ router.get(
   usersController.list,
 );
 router.get(
-  "/:id",    
+  "/:id",
   asyncHandler(AuthUser),
   asyncHandler(check.checkAdv),
   asyncHandler(usersController.getOne),
@@ -47,5 +45,10 @@ router.post(
   asyncHandler(usersController.create),
 );
 
-router.post("/login", authLimiter ,asyncHandler(usersController.login));
+router.post(
+  "/login",
+  authLimiter,
+  asyncHandler(usersValidator.loginValidator),
+  asyncHandler(usersController.login),
+);
 export default router;
