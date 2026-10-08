@@ -3,6 +3,8 @@ import * as yup from "yup";
 import * as usersService from "./users.service.js";
 import { StatusCodes } from "http-status-codes";
 import { bodyValidationCreate } from "./users.squema.js";
+
+
 export async function list(req: Request, res: Response) {
   const users = await usersService.findAll();
   res.status(StatusCodes.OK).json(users);

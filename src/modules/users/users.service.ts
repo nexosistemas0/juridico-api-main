@@ -9,23 +9,17 @@ import * as bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { EmailAlredyExist } from "../../errors/errors.js";
 
-
-async function emailExist(email: string): Promise<boolean> {
-  const result = await pool.query(`SELECT * FROM PUBLIC.users where email = $1`,[email]);
-  if(result.rowCount === 1){
-    return true;
-  }
-  return false;
-}
-
-
 export async function findAll(): Promise<User[]> {
-  const result = await pool.query("SELECT * FROM users ORDER BY id");
+  const USER_COLUMNS = "id, name, email, phone, type";
+
+  const result = await pool.query(`SELECT ${USER_COLUMNS} FROM users ORDER BY id`);
   return result.rows;
 }
 
 export async function findById(id: number): Promise<User | null> {
-  const result = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
+  const USER_COLUMNS = "id, name, email, phone, type";
+
+  const result = await pool.query(`SELECT ${USER_COLUMNS} FROM users WHERE id = $1`, [id]);
   return result.rows[0] ?? null;
 }
 
@@ -38,7 +32,7 @@ export async function create(data: CreateUserInput): Promise<User> {
   try {
     const result = await pool.query(
       `INSERT INTO users (name, email, phone, type, password)
-       VALUES ($1, $2, $3, 'customer', $4)
+       VALUES ($1, $2, $3, 'costomer', $4)
        RETURNING id, name, email, phone, type`,
       [name, email, phone, hash]
     );
@@ -56,15 +50,16 @@ export async function update(
   const existing = await findById(id);
   if (!existing) return null;
 
+  const USER_COLUMNS = "id, name, email, phone, type";
   const merged = { ...existing, ...data };
   const result = await pool.query(
     `UPDATE users SET name = $1, email = $2, phone = $3, type = $4
-     WHERE id = $5 RETURNING *`,
+     WHERE id = $5 RETURNING ${USER_COLUMNS}`,
     [merged.name, merged.email, merged.phone, id],
   );
   return result.rows[0];
 }
-
+/////// arrumar
 export async function remove(id: number): Promise<boolean> {
   const result = await pool.query("DELETE FROM users WHERE id = $1", [id]);
   return (result.rowCount ?? 0) > 0;

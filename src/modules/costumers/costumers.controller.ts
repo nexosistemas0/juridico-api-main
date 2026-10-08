@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import { isOwnCostumer } from "../../utils/isOwnCosumters.js";
 import * as costumerService from "./costumers.service.js";
 import { StatusCodes } from "http-status-codes";
+import { canViewCostumer } from "../../utils/isOwnCosumters.js";
+
 
 export async function list(req: Request, res: Response) {
   const costumers = await costumerService.findAll();
@@ -10,14 +12,19 @@ export async function list(req: Request, res: Response) {
 
 export async function getOne(req: Request, res: Response) {
   const id = Number(req.params.id);
-
   if (Number.isNaN(id)) {
     return res.status(StatusCodes.BAD_REQUEST).json({ error: "ID inválido" });
   }
-  const costumers = await costumerService.findById(id);
-  if (costumers === null)
-    return res.status(StatusCodes.NOT_FOUND).send("Usuario não encontrado");
-  return res.status(StatusCodes.OK).json({ costumer: costumers });
+
+  if (!(await canViewCostumer(req.userId.id, id))) {
+    return res.status(StatusCodes.NOT_FOUND).json({ error: "Cliente não encontrado" });
+  }
+
+  const costumer = await costumerService.findById(id);
+  if (costumer === null) {
+    return res.status(StatusCodes.NOT_FOUND).json({ error: "Cliente não encontrado" });
+  }
+  return res.status(StatusCodes.OK).json({ costumer });
 }
 
 export async function create(req: Request, res: Response) {
