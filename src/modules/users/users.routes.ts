@@ -28,7 +28,7 @@ router.put(
   "/:id",
   asyncHandler(AuthUser),
   asyncHandler(check.checkAdv),
-  asyncHandler(usersValidator.updateValidator),
+
   asyncHandler(usersController.update),
 );
 router.delete(

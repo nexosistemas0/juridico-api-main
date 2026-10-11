@@ -50,14 +50,31 @@ export async function update(
   const existing = await findById(id);
   if (!existing) return null;
 
+  const { password } = data
   const USER_COLUMNS = "id, name, email, phone, type";
-  const merged = { ...existing, ...data };
-  const result = await pool.query(
-    `UPDATE users SET name = $1, email = $2, phone = $3, type = $4
-     WHERE id = $5 RETURNING ${USER_COLUMNS}`,
-    [merged.name, merged.email, merged.phone, id],
-  );
-  return result.rows[0];
+  let hash
+  if(password){
+  hash = await bcrypt.hash(password, 12);
+}
+
+const email = data.email?.trim().toLowerCase();
+  try{
+    const result = await pool.query(
+    `UPDATE users
+    SET name = COALESCE($1, name),
+        email = COALESCE($2, email),
+        phone = COALESCE($3, phone),
+        password = COALESCE($4, password),
+        type = COALESCE($5, type)
+    WHERE id = $6
+    RETURNING ${USER_COLUMNS}`,
+    [data.name, email, data.phone, hash, data.type, id],
+    );
+    return result.rows[0];
+} catch (err: any) {
+  if (err.code === "23505") throw new EmailAlredyExist();
+  throw err;
+}
 }
 /////// arrumar
 export async function remove(id: number): Promise<boolean> {
