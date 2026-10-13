@@ -8,7 +8,7 @@ export const globlalLimiter = rateLimit({
     statusCode: 429,
   });
 export const authLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000,
+    windowMs: 1 * 60 * 1000,
     limit: 5,
     standardHeaders: "draft-8",
     message: {message:  "Numero agrasivo de requisições espere um pouco"},
