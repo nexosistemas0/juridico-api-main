@@ -36,6 +36,6 @@ export async function update(id: number, data: UpdateLawyersInput): Promise<Lawy
 
 export async function remove(id: number): Promise<boolean> {
     const result = await pool.query(`DELETE FROM public.lawyers WHERE id = $1`, [id]);
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
 }
 

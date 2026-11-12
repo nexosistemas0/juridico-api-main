@@ -38,7 +38,7 @@ export async function create(req: Request, res: Response) {
     const user = await usersService.create(validatedBody);
     return res.status(StatusCodes.CREATED).json(user);
   } catch (err) {
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: err.message });
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ error: err instanceof Error ? err.message : "Erro interno" });
   }
 };
 
@@ -50,7 +50,7 @@ export async function update(req: Request, res: Response) {
 
   // TODO: run req.body through a bodyValidationUpdate schema before this line
   const user = await usersService.update(id, req.body);
-  console.log(req.body);
+
   if (!user) return res.status(StatusCodes.NOT_FOUND).json({ error: "Usuário não encontrado" });
   res.status(StatusCodes.OK).json(user);
 };
