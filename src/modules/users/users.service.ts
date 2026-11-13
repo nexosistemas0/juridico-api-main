@@ -65,10 +65,10 @@ const email = data.email?.trim().toLowerCase();
         email = COALESCE($2, email),
         phone = COALESCE($3, phone),
         password = COALESCE($4, password),
-        type = COALESCE($5, type)
-    WHERE id = $6
+        type = type
+    WHERE id = $5
     RETURNING ${USER_COLUMNS}`,
-    [data.name, email, data.phone, hash, data.type, id],
+    [data.name, email, data.phone, hash, id],
     );
     return result.rows[0];
 } catch (err: any) {

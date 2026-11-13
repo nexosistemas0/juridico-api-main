@@ -7,7 +7,7 @@ export interface User {
   type: string
 }
 
-export type CreateUserInput = Omit<User, "id">;
+export type CreateUserInput = Omit<User, "id" | "type">;
 export type LoginInput = {
   email: string,
   password: string
