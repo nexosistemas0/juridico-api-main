@@ -1,4 +1,4 @@
-# Nexo Jurídico — API
+# Martins Advogados — API
 
 API Express/TypeScript para o portal de advogados e clientes. Frontend: https://github.com/nexosistemas0/juridico-app (branch `feat/portal-cliente-datajud`). Node.js 24.
 
@@ -63,3 +63,12 @@ npm start
 Compile o frontend e configure FRONTEND_DIST para seu diretório dist. Sirva frontend e /api na mesma origem HTTPS; APP_ORIGIN deve conter essa origem. Configure TRUST_PROXY_HOPS somente conforme o proxy usado. Não execute scripts/preview-api.ts em produção: é uma demonstração local com sessão fictícia automática, exige LOCAL_QA=1 e escuta somente localhost.
 
 Testes cobrem autorização entre contas, convite de uso único, mensagens/documentos privados, CRUD de audiências/movimentações, notificações e sincronização idempotente. CI executa testes e build. Falta validar o fluxo completo com DATABASE_URL real no servidor de destino e uma consulta DataJud real. Recuperação de senha por e-mail, verificação de e-mail e notificações push não estão implementadas.
+
+
+## Aplicativo React Native Martins Advogados
+
+O app nativo está na raiz de `juridico-app`, branch `feat/martins-react-native`. O portal web anterior foi movido para `web/`; se utilizado, ajuste FRONTEND_DIST para `../juridico-app/web/dist`.
+
+Login, cadastro, ativação e troca de senha com `X-Client-Type: mobile` retornam `sessionToken` opaco. O app guarda esse valor no SecureStore e envia `Authorization: Bearer <token>`. A validade continua em 24 horas, com hash no banco; logout e troca de senha revogam sessões. Um header Authorization inválido nunca recorre ao cookie. Clientes web continuam recebendo somente cookie HttpOnly e o formato anterior da resposta. `X-Client-Type` escolhe apenas o transporte da sessão, não concede privilégios.
+
+Sem nova migração Supabase. Para testar celular na mesma rede, use o IP LAN do computador no EXPO_PUBLIC_API_URL do app. Produção exige HTTPS. Não coloque DATABASE_URL nem credenciais do banco no aplicativo. Os testes adicionais cobrem sessão bearer, token inválido com cookie válido, rotação e revogação, preservando login web.
