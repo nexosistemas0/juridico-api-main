@@ -83,3 +83,35 @@ test('notifications scoped to user; cancellations and logout persist',async()=>{
  assert.equal((await customer.get('/api/auth/me')).status,401);
  assert.equal((await post(customer,'/auth/login',{email:'CLIENT@EXAMPLE.TEST',password:'Customer-123!'})).status,200);
 });
+
+test('native bearer sessions work without cookies, rotate passwords and revoke on logout',async()=>{
+ const mobile=request(app);
+ const login=await post(mobile,'/auth/login',{email:'lawyer@example.test',password:'Test-only-123!'}).set('X-Client-Type','mobile');
+ assert.equal(login.status,200);assert.match(login.body.sessionToken,/^[a-f0-9]{64}$/);assert.equal(login.headers['set-cookie'],undefined);
+ const token=login.body.sessionToken;
+ assert.equal((await mobile.get('/api/auth/me').set('Authorization',`Bearer ${token}`)).status,200);
+ assert.equal((await mobile.get('/api/clients').set('Authorization',`Bearer ${token}`)).status,200);
+ assert.equal((await lawyer.get('/api/auth/me').set('Authorization','Bearer invalid')).status,401);
+ const change=await post(mobile,'/account/password',{currentPassword:'Test-only-123!',password:'Native-new-123!'}).set('X-Client-Type','mobile').set('Authorization',`Bearer ${token}`);
+ assert.equal(change.status,200);assert.notEqual(change.body.sessionToken,token);
+ assert.equal((await mobile.get('/api/auth/me').set('Authorization',`Bearer ${token}`)).status,401);
+ const rotated=change.body.sessionToken;
+ assert.equal((await post(mobile,'/auth/logout',{}).set('Authorization',`Bearer ${rotated}`)).status,204);
+ assert.equal((await mobile.get('/api/auth/me').set('Authorization',`Bearer ${rotated}`)).status,401);
+ const web=await post(request.agent(app),'/auth/login',{email:'lawyer@example.test',password:'Native-new-123!'});
+ assert.equal(web.status,200);assert.equal(web.body.sessionToken,undefined);assert.ok(web.headers['set-cookie']);
+});
+test('native registration and client activation return isolated bearer sessions',async()=>{
+ const mobile=request(app);
+ const registration=await post(mobile,'/auth/register',{name:'Advogada Mobile',email:'native@example.test',password:'Native-register-123!',oab:'99999/RS'}).set('X-Client-Type','mobile');
+ assert.equal(registration.status,201);const token=registration.body.sessionToken;assert.match(token,/^[a-f0-9]{64}$/);
+ const invitation=await post(mobile,'/clients',{name:'Cliente Mobile',email:'native-client@example.test',cpf:'99999999999',date:'1992-01-01'}).set('Authorization',`Bearer ${token}`);
+ assert.equal(invitation.status,201);
+ const activate=await post(mobile,'/auth/activate',{token:invitation.body.activationPath.split('#')[1],password:'Native-client-123!'}).set('X-Client-Type','mobile');
+ assert.equal(activate.status,200);assert.match(activate.body.sessionToken,/^[a-f0-9]{64}$/);assert.equal(activate.headers['set-cookie'],undefined);
+ const clientToken=activate.body.sessionToken;
+ assert.equal((await mobile.get('/api/clients').set('Authorization',`Bearer ${clientToken}`)).status,403);
+ assert.equal((await mobile.get(`/api/processes/${caseId}`).set('Authorization',`Bearer ${clientToken}`)).status,404);
+ assert.equal((await mobile.get(`/api/processes/${caseId}`).set('Authorization',`Bearer ${token}`)).status,404);
+ assert.equal((await mobile.get('/api/auth/me').set('Authorization',`Bearer ${clientToken}`)).body.type,'costumer');
+});

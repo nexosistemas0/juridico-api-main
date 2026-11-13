@@ -18,12 +18,17 @@ const safeUser = 'id, name, email, phone, type';
 const authLimit = rateLimit({windowMs:15*60*1000,limit:30,standardHeaders:'draft-7',legacyHeaders:false,message:{message:'Muitas tentativas. Aguarde alguns minutos.'}});
 const queryLimit = rateLimit({windowMs:60*1000,limit:15,standardHeaders:'draft-7',legacyHeaders:false,message:{message:'Aguarde um minuto antes de consultar novamente.'}});
 const cookieName = 'juridico_session';
-function cookieToken(req:Request) { return req.headers.cookie?.split(';').map(v=>v.trim()).find(v=>v.startsWith(`${cookieName}=`))?.slice(cookieName.length+1) || ''; }
+function cookieToken(req:Request) {
+  // A supplied bearer token takes precedence; never fall back to a cookie on malformed credentials.
+  if (req.headers.authorization !== undefined) return /^Bearer ([a-f0-9]{64})$/.exec(req.headers.authorization)?.[1] || '';
+ return req.headers.cookie?.split(';').map(v=>v.trim()).find(v=>v.startsWith(`${cookieName}=`))?.slice(cookieName.length+1) || ''; }
 function cookie(res:Response, value:string, clear=false) { res.cookie(cookieName,value,{httpOnly:true,secure:process.env.NODE_ENV==='production',sameSite:'lax',path:'/api',maxAge:clear ? 0 : 86400000}); }
-async function session(userId:number,res:Response) {
+async function session(userId:number,res:Response,req:Request) {
   const token=randomBytes(32).toString('hex');
   await pool.query("INSERT INTO portal_sessions(token_hash,id_user,expires_at) VALUES($1,$2,now()+interval '1 day')",[digest(token),userId]);
+  if (req.headers['x-client-type'] === 'mobile') return { sessionToken: token };
   cookie(res,token);
+  return {};
 }
 router.use((req,res,next)=>{
   res.setHeader('Cache-Control','no-store');
@@ -39,13 +44,13 @@ router.post('/auth/register',authLimit,async(req,res)=>{
     await db.query("INSERT INTO lawyers(id_user,oab,position,whatsapp,photo) VALUES($1,$2,'Advogado',$3,'')",[u.id,d.oab,d.phone]);
     return u;
   });
-  await session(user.id,res); res.status(201).json(user);
+  const auth=await session(user.id,res,req); res.status(201).json({...user,...auth});
 });
 router.post('/auth/login',authLimit,async(req,res)=>{
   const d=await validate({email:email(),password:yup.string().max(72).required()},req.body);
   const {rows:[user]}=await pool.query('SELECT * FROM users WHERE lower(email)=$1',[d.email]);
   if (!user || !await bcrypt.compare(d.password,user.password || '')) throw new ApiError(401,'E-mail ou senha incorretos.');
-  await session(user.id,res); const {password:_,...safe}=user; res.json(safe);
+  const auth=await session(user.id,res,req); const {password:_,...safe}=user; res.json({...safe,...auth});
 });
 router.post('/auth/activate',authLimit,async(req,res)=>{
   const d=await validate({token:yup.string().matches(/^[a-f0-9]{64}$/).required(),password:password()},req.body);
@@ -58,7 +63,7 @@ router.post('/auth/activate',authLimit,async(req,res)=>{
     await db.query('DELETE FROM portal_sessions WHERE id_user=$1',[u.id]);
     return u;
   });
-  await session(user.id,res); res.json(user);
+  const auth=await session(user.id,res,req); res.json({...user,...auth});
 });
 router.use(async(req,res,next)=>{
   const token=cookieToken(req);
@@ -81,7 +86,7 @@ router.post('/account/password',authLimit,async(req,res)=>{
   if (!await bcrypt.compare(d.currentPassword,u.password)) throw new ApiError(400,'Senha atual incorreta.');
   const hash=await bcrypt.hash(d.password,12);
   await transaction(async db=>{await db.query('UPDATE users SET password=$1 WHERE id=$2',[hash,res.locals.user.id]);await db.query('DELETE FROM portal_sessions WHERE id_user=$1',[res.locals.user.id]);});
-  await session(res.locals.user.id,res);res.status(204).end();
+  const auth=await session(res.locals.user.id,res,req); if (req.headers['x-client-type'] === 'mobile') res.json(auth); else res.status(204).end();
 });
 function lawyer(_req:Request,res:Response,next:NextFunction) { if (res.locals.user.type!=='adv'||!res.locals.user.lawyer_id) throw new ApiError(403,'Acesso exclusivo do advogado.'); next(); }
 async function accessibleProcess(processId:number,user:any,write=false) {
