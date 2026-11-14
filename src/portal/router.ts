@@ -7,6 +7,9 @@ import * as yup from 'yup';
 import { pool, transaction } from './db.js';
 import { ApiError, lookup, normalizeNumber, inferTribunal, tribunals } from './datajud.js';
 
+import {publicSignatures,signatures} from './signatures.js';
+import {agenda} from './agenda.js';
+
 const router = Router();
 const digest = (s:string) => createHash('sha256').update(s).digest('hex');
 const id = (v:unknown) => { const n=Number(v); if (!Number.isSafeInteger(n)||n<1||n>2147483647) throw new ApiError(400,'Identificador inválido.'); return n; };
@@ -35,6 +38,7 @@ router.use((req,res,next)=>{
   if (!['GET','HEAD','OPTIONS'].includes(req.method) && req.headers['x-requested-with'] !== 'juridico-app') return next(new ApiError(403,'Origem da requisição inválida.'));
   next();
 });
+router.use(publicSignatures);
 router.get('/health',async (_req,res)=>{ await pool.query('select 1'); res.json({status:'ok'}); });
 router.post('/auth/register',authLimit,async(req,res)=>{
   const d=await validate({name:field().min(2).required(),email:email(),password:password(),phone:field().max(20).default(''),oab:field().max(30).min(3).required()},req.body);
@@ -72,8 +76,12 @@ router.use(async(req,res,next)=>{
     FROM portal_sessions s JOIN users u ON u.id=s.id_user LEFT JOIN lawyers l ON l.id_user=u.id LEFT JOIN costumers c ON c.id_user=u.id
     WHERE s.token_hash=$1 AND s.expires_at>now()`,[digest(token)]);
   if (!user) throw new ApiError(401,'Sua sessão expirou. Entre novamente.');
-  res.locals.user=user; next();
+  res.locals.user=user;
+  await pool.query('INSERT INTO portal_access_logs(id_user,action,ip,device) VALUES($1,$2,$3,$4)',[user.id,req.method+':'+req.path.split('/')[1],String(req.ip||'').slice(0,64),String(req.headers['user-agent']||'').slice(0,500)]);
+  next();
 });
+router.use(signatures);
+router.use(agenda);
 router.get('/auth/me',(_req,res)=>res.json(res.locals.user));
 router.post('/auth/logout',async(req,res)=>{ await pool.query('DELETE FROM portal_sessions WHERE token_hash=$1',[digest(cookieToken(req))]);cookie(res,'',true);res.status(204).end(); });
 router.patch('/account',async(req,res)=>{
@@ -99,6 +107,15 @@ async function ownedClient(clientId:number,lawyerId:number) {
   if (!c) throw new ApiError(404,'Cliente não encontrado.'); return c;
 }
 async function notify(db:any,userId:number,title:string,description:string) { await db.query('INSERT INTO notifications(id_user,title,description) VALUES($1,$2,$3)',[userId,title,description]); }
+router.get('/clients/search',lawyer,async(req,res)=>{
+ const page=Number(req.query.page||1),limit=Number(req.query.limit||20),q=String(req.query.q||'').trim();
+ if(!Number.isInteger(page)||page<1||page>100000||!Number.isInteger(limit)||limit<1||limit>100||q.length>150)throw new ApiError(400,'Busca ou paginação inválida.');
+ const digits=q.replace(/\D/g,''),pattern='%'+q.replace(/[\\%_]/g,'\\$&')+'%';
+ const where=`FROM costumers c JOIN users u ON u.id=c.id_user JOIN portal_lawyer_clients lc ON lc.id_costumer=c.id WHERE lc.id_lawyer=$1 AND (portal_search_text(u.name) LIKE portal_search_text($2) OR lower(u.email) LIKE lower($2) OR ($3<>'' AND regexp_replace(u.phone,'[^0-9]','','g') LIKE '%'||$3||'%'))`;
+ const {rows:[count]}=await pool.query('SELECT count(*)::integer as total '+where,[res.locals.user.lawyer_id,pattern,digits]);
+ const {rows}=await pool.query('SELECT c.*,u.name,u.email,u.phone,EXISTS(SELECT 1 FROM portal_invites i WHERE i.id_user=u.id AND i.used_at IS NOT NULL) AS activated '+where+' ORDER BY portal_search_text(u.name),c.id LIMIT $4 OFFSET $5',[res.locals.user.lawyer_id,pattern,digits,limit,(page-1)*limit]);
+ res.json({items:rows,total:count.total,page,limit});
+});
 router.get('/clients',lawyer,async(_req,res)=>{
   const {rows}=await pool.query(`SELECT c.*,u.name,u.email,u.phone,EXISTS(SELECT 1 FROM portal_invites i WHERE i.id_user=u.id AND i.used_at IS NOT NULL) AS activated
     FROM costumers c JOIN users u ON u.id=c.id_user JOIN portal_lawyer_clients lc ON lc.id_costumer=c.id WHERE lc.id_lawyer=$1 ORDER BY u.name`,[res.locals.user.lawyer_id]);res.json(rows);
@@ -154,6 +171,7 @@ router.patch('/processes/:id',lawyer,async(req,res)=>{
   const d=await validate({title:field().min(2).required(),status:field().required(),area:field().default(''),court:field().default(''),observations:yup.string().max(10000).default('')},req.body);
   const {rows:[result]}=await pool.query('UPDATE process SET title=$1,status=$2,area=$3,court=$4,observations=$5,last_update=now() WHERE id=$6 RETURNING *',[d.title,d.status,d.area,d.court,d.observations,p.id]);res.json(result);
 });
+router.get('/processes/:id/history',async(req,res)=>{const p=await accessibleProcess(id(req.params.id),res.locals.user);const {rows}=await pool.query('SELECT id,checked_at,snapshot FROM portal_datajud_history WHERE id_process=$1 ORDER BY id DESC LIMIT 100',[p.id]);res.json(rows)});
 router.post('/processes/:id/sync',lawyer,queryLimit,async(req,res)=>{
   const p=await accessibleProcess(id(req.params.id),res.locals.user,true);
   if(p.datajud_checked_at && Date.now()-new Date(p.datajud_checked_at).getTime()<60000) throw new ApiError(429,'Aguarde um minuto entre atualizações deste processo.');
@@ -162,7 +180,8 @@ router.post('/processes/:id/sync',lawyer,queryLimit,async(req,res)=>{
     await db.query('SELECT id FROM process WHERE id=$1 FOR UPDATE',[p.id]);
     let count=0;
     for(const m of data.movements) {const r=await db.query("INSERT INTO movements(id_process,date,title,description,source,external_key,source_occurred_at) VALUES($1,$2,$3,$4,'datajud',$5,$6) ON CONFLICT(id_process,external_key) DO NOTHING",[p.id,m.date,m.title,m.description,m.key,m.date]);count+=r.rowCount||0;}
-    await db.query('UPDATE process SET datajud_checked_at=now(),datajud_updated_at=$1,last_update=now() WHERE id=$2',[data.updatedAt,p.id]);
+    await db.query('UPDATE process SET datajud_checked_at=now(),datajud_updated_at=$1,last_update=now(),datajud_metadata=$3,court=$4 WHERE id=$2',[data.updatedAt,p.id,JSON.stringify(data),data.court.slice(0,150)]);
+    await db.query('INSERT INTO portal_datajud_history(id_process,snapshot) VALUES($1,$2)',[p.id,JSON.stringify(data)]);
     if(count) await notify(db,p.client_user_id,'Atualizações no seu processo',`${count} movimentação(ões) importada(s) do CNJ / DataJud: ${p.title}`);
     return count;
   });res.json({inserted,source:data.source,checkedAt:new Date().toISOString(),sourceUpdatedAt:data.updatedAt});
@@ -180,17 +199,6 @@ router.patch('/movements/:id',lawyer,async(req,res)=>{
 router.delete('/movements/:id',lawyer,async(req,res)=>{
   const {rows:[m]}=await pool.query('SELECT * FROM movements WHERE id=$1',[id(req.params.id)]);if(!m)throw new ApiError(404,'Movimentação não encontrada.');await accessibleProcess(m.id_process,res.locals.user,true);if(m.source==='datajud')throw new ApiError(409,'Movimentações oficiais não podem ser removidas.');await pool.query('DELETE FROM movements WHERE id=$1',[m.id]);res.status(204).end();
 });
-const hearingShape={type:field().required(),date:yup.string().matches(/^\d{4}-\d{2}-\d{2}$/).required(),hour:yup.string().matches(/^([01]\d|2[0-3]):[0-5]\d$/).required(),place:field().default(''),room:field().default(''),meeting_link:yup.string().max(255).test('url','Use um link HTTPS.',v=>!v||/^https:\/\//i.test(v)).default(''),guidelines:yup.string().max(10000).default('')};
-router.get('/hearings',async(_req,res)=>{const {rows}=await pool.query('SELECT h.*,p.title as process_title,p.process_num FROM hearings h JOIN process p ON p.id=h.id_process JOIN lawyers l ON l.id=p.id_lawyer JOIN costumers c ON c.id=p.id_costumer WHERE l.id_user=$1 OR c.id_user=$1 ORDER BY h.date,h.hour',[res.locals.user.id]);res.json(rows);});
-router.post('/processes/:id/hearings',lawyer,async(req,res)=>{
-  const p=await accessibleProcess(id(req.params.id),res.locals.user,true),d=await validate(hearingShape,req.body);
-  const result=await transaction(async db=>{const {rows:[h]}=await db.query('INSERT INTO hearings(id_process,type,date,hour,place,room,meeting_link,guidelines) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',[p.id,d.type,d.date,d.hour,d.place,d.room,d.meeting_link,d.guidelines]);await notify(db,p.client_user_id,'Audiência agendada',`${d.type} — ${d.date} às ${d.hour} (Brasília).`);return h;});res.status(201).json(result);
-});
-router.patch('/hearings/:id',lawyer,async(req,res)=>{
-  const {rows:[h]}=await pool.query('SELECT * FROM hearings WHERE id=$1',[id(req.params.id)]);if(!h)throw new ApiError(404,'Audiência não encontrada.');const p=await accessibleProcess(h.id_process,res.locals.user,true),d=await validate(hearingShape,req.body);
-  const result=await transaction(async db=>{const {rows:[r]}=await db.query('UPDATE hearings SET type=$1,date=$2,hour=$3,place=$4,room=$5,meeting_link=$6,guidelines=$7 WHERE id=$8 RETURNING *',[d.type,d.date,d.hour,d.place,d.room,d.meeting_link,d.guidelines,h.id]);await notify(db,p.client_user_id,'Audiência atualizada',`${d.type} — ${d.date} às ${d.hour} (Brasília).`);return r;});res.json(result);
-});
-router.delete('/hearings/:id',lawyer,async(req,res)=>{const {rows:[h]}=await pool.query('SELECT * FROM hearings WHERE id=$1',[id(req.params.id)]);if(!h)throw new ApiError(404,'Audiência não encontrada.');const p=await accessibleProcess(h.id_process,res.locals.user,true);await transaction(async db=>{await db.query('DELETE FROM hearings WHERE id=$1',[h.id]);await notify(db,p.client_user_id,'Audiência cancelada',h.type);});res.status(204).end();});
 const upload=multer({storage:multer.memoryStorage(),limits:{fileSize:5*1024*1024,files:1,fields:5}});
 router.post('/processes/:id/documents',lawyer,upload.single('file'),async(req,res)=>{
   const p=await accessibleProcess(id(req.params.id),res.locals.user,true),f=req.file;

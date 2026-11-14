@@ -1,50 +1,21 @@
 // LOCAL QA ONLY. Uses an isolated PGlite database; never connects to Supabase.
-import { PGlite } from "@electric-sql/pglite";
-import { readFile } from "node:fs/promises";
-import { pool } from "../src/portal/db.js";
-import app from "../src/app.js";
-import express from "express";
-import { createHash } from "node:crypto";
-if (process.env.NODE_ENV === "production" || process.env.LOCAL_QA !== "1")
-  throw new Error("Somente QA local: defina LOCAL_QA=1 explicitamente.");
-const db = new PGlite();
-await db.exec(
-  await readFile(
-    new URL("../tests/fixtures/existing-schema.sql", import.meta.url),
-    "utf8",
-  ),
-);
-await db.exec(
-  await readFile(
-    new URL(
-      "../supabase/migrations/20261112180705_portal_cliente_datajud.sql",
-      import.meta.url,
-    ),
-    "utf8",
-  ),
-);
-const query = async (sql: string, params?: any[]) => {
-  const r = await db.query(sql, params);
-  return { rows: r.rows, rowCount: r.affectedRows || r.rows.length };
-};
-pool.query = query as any;
-pool.connect = (async () => ({ query, release() {} })) as any;
-await db.exec(
-  "INSERT INTO users(name,email,phone,password,type) VALUES('Marina Teste','demo@example.test','','not-a-login','adv'),('Cliente de demonstração','client@example.test','','not-a-login','costumer'); INSERT INTO lawyers(id_user,oab,position,whatsapp) VALUES(1,'DEMO/RS','Advogada',''); INSERT INTO costumers(id_user,cpf,date,address) VALUES(2,'12345678901','1990-01-01',''); INSERT INTO portal_lawyer_clients(id_lawyer,id_costumer) VALUES(1,1); INSERT INTO process(process_num,title,id_costumer,id_lawyer,status,area,court) VALUES('00008323520184013202','Acompanhamento de demonstração',1,1,'Em andamento','Cível','Fórum de demonstração'); INSERT INTO hearings(id_process,type,date,hour,place,room,meeting_link,guidelines) VALUES(1,'Audiência de conciliação','2027-01-20','14:30','Fórum','12','','Chegue com 15 minutos de antecedência.'); INSERT INTO movements(id_process,date,title,description) VALUES(1,'2026-11-12','Orientações iniciais','Exemplo fictício para validar a interface. Nenhum dado real é utilizado.');",
-);
-const qaToken = "0".repeat(64);
-await db.query(
-  "INSERT INTO portal_sessions(token_hash,id_user,expires_at) VALUES($1,1,now()+interval '1 day')",
-  [createHash("sha256").update(qaToken).digest("hex")],
-);
-const qa = express();
-qa.use((req, _res, next) => {
-  req.headers.cookie = "juridico_session=" + qaToken;
-  next();
-});
+import {PGlite} from '@electric-sql/pglite';
+import {readFile} from 'node:fs/promises';
+import {pool} from '../src/portal/db.js';
+import app from '../src/app.js';
+import express from 'express';
+import {createHash} from 'node:crypto';
+if (process.env.NODE_ENV === 'production' || process.env.LOCAL_QA !== '1') throw new Error('Somente QA local: defina LOCAL_QA=1 explicitamente.');
+const db=new PGlite();
+await db.exec(await readFile(new URL('../tests/fixtures/existing-schema.sql',import.meta.url),'utf8'));
+await db.exec(await readFile(new URL('../supabase/migrations/20261112180705_portal_cliente_datajud.sql',import.meta.url),'utf8'));
+const query=async(sql:string,params?:any[])=>{const r=await db.query(sql,params);return {rows:r.rows,rowCount:r.affectedRows||r.rows.length}};
+pool.query=query as any;pool.connect=(async()=>({query,release(){}})) as any;
+await db.exec("INSERT INTO users(name,email,phone,password,type) VALUES('Marina Teste','demo@example.test','','not-a-login','adv'),('Cliente de demonstração','client@example.test','','not-a-login','costumer'); INSERT INTO lawyers(id_user,oab,position,whatsapp) VALUES(1,'DEMO/RS','Advogada',''); INSERT INTO costumers(id_user,cpf,date,address) VALUES(2,'12345678901','1990-01-01',''); INSERT INTO portal_lawyer_clients(id_lawyer,id_costumer) VALUES(1,1); INSERT INTO process(process_num,title,id_costumer,id_lawyer,status,area,court) VALUES('00008323520184013202','Acompanhamento de demonstração',1,1,'Em andamento','Cível','Fórum de demonstração'); INSERT INTO hearings(id_process,type,date,hour,place,room,meeting_link,guidelines) VALUES(1,'Audiência de conciliação','2027-01-20','14:30','Fórum','12','','Chegue com 15 minutos de antecedência.'); INSERT INTO movements(id_process,date,title,description) VALUES(1,'2026-11-12','Orientações iniciais','Exemplo fictício para validar a interface. Nenhum dado real é utilizado.');");
+await db.exec(await readFile(new URL('../supabase/migrations/20261114013314_assinaturas_agenda_busca.sql',import.meta.url),'utf8'));
+const qaToken='0'.repeat(64);
+await db.query("INSERT INTO portal_sessions(token_hash,id_user,expires_at) VALUES($1,1,now()+interval '1 day')",[createHash('sha256').update(qaToken).digest('hex')]);
+const qa=express();
+qa.use((req,_res,next)=>{req.headers.cookie='juridico_session='+qaToken;next()});
 qa.use(app);
-qa.listen(3333, "127.0.0.1", () =>
-  console.log(
-    "Local QA API on 3333 — isolated database, no real customer data.",
-  ),
-);
+qa.listen(3333,'127.0.0.1',()=>console.log('Local QA API on 3333 — isolated database, no real customer data.'));

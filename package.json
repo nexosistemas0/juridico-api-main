@@ -11,7 +11,9 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "test": "node --import tsx --test tests/*.test.ts",
-    "migrate": "node scripts/migrate.mjs"
+    "migrate": "node scripts/migrate.mjs",
+    "reminders": "node --import tsx src/reminder-worker.ts",
+    "reminders:production": "node dist/reminder-worker.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
@@ -23,6 +25,7 @@
     "http-status-codes": "^2.3.0",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.2.0",
+    "pdf-lib": "1.17.1",
     "pg": "^8.22.0",
     "pg-int8": "^1.0.1",
     "pg-protocol": "^1.15.0",
